@@ -18,6 +18,7 @@ cxxopts::ParseResult parse(int argc, char* argv[]) {
       ("p,port", " server port to listen on/connect to", cxxopts::value<int>()->default_value("43210"))
       ("b,bandwidth", "target bandwidth in Kbits/sec", cxxopts::value<int>()->default_value("1024"))
       ("i,interval", "seconds between periodic bandwidth reports", cxxopts::value<int>()->default_value("1"), "sec")
+      ("t,time", "time in seconds to transmit for", cxxopts::value<int>()->default_value("10"), "sec")
       ("h,help", "show this help");
 
     auto result = options.parse(argc, argv);

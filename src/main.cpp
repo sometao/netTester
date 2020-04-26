@@ -2,7 +2,7 @@
 #include "cxxopts.hpp"
 #include <iostream>
 #include <string>
-#define CXXOPTS_USE_UNICODE
+#include "seeker/logger.h"
 
 using std::cout;
 using std::endl;
@@ -11,20 +11,32 @@ using std::string;
 cxxopts::ParseResult parse(int argc, char* argv[]);
 
 
+void startClient(const string& serverHost, int serverPort, int timeInSeconds);
+
+void startServer(int port);
 
 int main(int argc, char* argv[]) {
   auto result = parse(argc, argv);
-  try {
-    auto s = result["s"].as<bool>();
-    cout << "server:" << s << endl;
+  seeker::Logger::init();
 
-    auto v = result["input"].as<string>();
-    cout << "input:" << v << endl;
+  try {
+    if(result.count("s")) {
+      int port = result["p"].as<int>();
+      startServer(port);
+    } else if(result.count("c")) {
+      string host = result["c"].as<string>();
+      int port = result["p"].as<int>();
+      int time = result["t"].as<int>();
+      startClient(host, port, time);
+    } else {
+      E_LOG("params error, it should not happen.");
+    }
+
+
+
   
   } catch(...) {         
     cout << "unknown error." << endl;
   }
-   
-
   return 0;
 }
