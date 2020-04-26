@@ -22,13 +22,29 @@ Client::Client(const string& serverHost, int serverPort)
   targetAddr.sin_port = htons(serverPort);
 }
 
+
 void Client::sendData(size_t num) {
-  auto len = sizeof(SOCKADDR);
+  static auto len = sizeof(SOCKADDR);
+  sendto(sock, dataBuf, num, 0, (sockaddr*)&targetAddr, len);
+  I_LOG("send data: [{}]", string(dataBuf, num));
+}
 
-  char* aaa = "123456789ABCDEF";
+void Client::readData()
+{
+  static char recvBuf[4096] = {};
+  SOCKADDR_IN peerAddr;
+  size_t addrLen = sizeof(SOCKADDR_IN);
 
-  sendto(sock, aaa, strlen(aaa), 0, (sockaddr*)&targetAddr, len);
-  I_LOG("send data size={}", strlen(aaa));
+  int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&peerAddr, (socklen_t*)&addrLen);
+  if (recvNum < 0) {
+    auto msg = fmt::format("error: recv_num={}", recvNum);
+    E_LOG(msg);
+    throw std::runtime_error(msg);
+  }
+  recvBuf[recvNum] = '\0';
+
+  I_LOG("recv data: [{}]", recvBuf);
+
 }
 
 void Client::close() {
@@ -43,11 +59,10 @@ void startClient(const string& serverHost, int serverPort, int timeInSeconds) {
   I_LOG("Starting send data to {}:{}", serverHost, serverPort);
   Client client(serverHost, serverPort);
   while (timeInSeconds > 0) {
-    client.sendData(10);
-    timeInSeconds --;
     I_LOG("send data [{}]", timeInSeconds);
+    client.sendData(10);
+    client.readData();
+    timeInSeconds --;
   }
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   client.close();
 }

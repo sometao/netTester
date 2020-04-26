@@ -44,13 +44,14 @@ void Server::start() {
   while (c < 10) {
     cout << "waiting data..." << endl;
     int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&peerAddr, (socklen_t*)&addrLen);
-    cout << "got data..." << endl;
-
     if (recvNum < 0) {
       auto msg = fmt::format("error: recv_num={}", recvNum);
       E_LOG(msg);
       throw std::runtime_error(msg);
     }
+
+    sendto(sock, recvBuf, recvNum, 0, (sockaddr*)&peerAddr, addrLen);
+
     c += 1;
     recvBuf[recvNum] = '\0';
     I_LOG("[\t{}\t]: recv [{} byte] from [{}]: [{}]", c, recvNum, inet_ntoa(peerAddr.sin_addr),
