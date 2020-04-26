@@ -17,10 +17,10 @@
 
 
 ### TODOS
-- Client发送UDP消息，Server接收UDP消息
-- Server接收到消息后，进行回复
-- Client接收Server返回的消息
-- 命令行参数解析
-- 定义测试消息基础格式
-- 完成RTT功能
-- 完成带宽、抖动、丢包率功能
+- [ ] Client发送UDP消息，Server接收UDP消息
+- [ ] Server接收到消息后，进行回复
+- [ ] Client接收Server返回的消息
+- [ ] 命令行参数解析
+- [ ] 定义测试消息基础格式
+- [ ] 完成RTT功能
+- [ ] 完成带宽、抖动、丢包率功能
