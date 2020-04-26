@@ -1,0 +1,41 @@
+#include "config.h"
+#include "cxxopts.hpp"
+#include <string>
+
+
+using std::string;
+
+cxxopts::ParseResult parse(int argc, char* argv[]) {
+  cxxopts::Options options(argv[0], " - example command line options");
+  try {
+
+    options.positional_help("[optional args]").show_positional_help();
+
+
+    options.add_options()
+      ("s,server", "run in server mode", cxxopts::value<bool>())
+      ("c,client", "run in client mode, connecting to <host>", cxxopts::value<string>(),"<host>")
+      ("p,port", " server port to listen on/connect to", cxxopts::value<int>()->default_value("43210"))
+      ("b,bandwidth", "target bandwidth in Kbits/sec", cxxopts::value<int>()->default_value("1024"))
+      ("i,interval", "seconds between periodic bandwidth reports", cxxopts::value<int>()->default_value("1"), "sec")
+      ("h,help", "show this help");
+
+    auto result = options.parse(argc, argv);
+
+    if (result.count("help")) {
+      std::cout << options.help({""}) << std::endl;
+      exit(0);
+    }
+
+    if (!result.count("s") && !result.count("c")) { 
+      std::cout << options.help({""}) << std::endl;
+    }
+
+    return result;
+
+  } catch (const cxxopts::OptionException& e) {
+    std::cout << "error parsing options: " << e.what() << std::endl;
+    std::cout << options.help({""}) << std::endl;
+    exit(1);
+  }
+}
