@@ -1,3 +1,4 @@
+#include "config.h"
 #include <string>
 #include "seeker/socketUtil.h"
 
@@ -12,7 +13,7 @@ class Client {
   const int targetPort;
   sockaddr_in targetAddr = {0};
   SOCKET sock;
-  char dataBuf[4096] = "123456789";
+  char* dataBuf = "123456789ABCDEFG";
 
  public:
   Client(const string& serverHost, int serverPort);

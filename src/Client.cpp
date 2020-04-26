@@ -1,6 +1,8 @@
 #include "Client.h"
 #include "seeker/loggerApi.h"
 #include <string>
+#include <chrono>
+#include <thread>
 
 using seeker::SocketUtil;
 using std::string;
@@ -12,7 +14,7 @@ Client::Client(const string& serverHost, int serverPort)
     E_LOG("WSAStartup error.");
     throw std::runtime_error("WSAStartup error.");
   }
-  SOCKET sock = socket(AF_INET, SOCK_DGRAM, 0);
+  sock = socket(AF_INET, SOCK_DGRAM, 0);
 
   // init target address
   targetAddr.sin_family = AF_INET;
@@ -21,9 +23,12 @@ Client::Client(const string& serverHost, int serverPort)
 }
 
 void Client::sendData(size_t num) {
-  static auto len = sizeof(SOCKADDR);
-  sendto(sock, dataBuf, num, 0, (sockaddr*)&targetAddr, len);
-  I_LOG("send data size=", num);
+  auto len = sizeof(SOCKADDR);
+
+  char* aaa = "123456789ABCDEF";
+
+  sendto(sock, aaa, strlen(aaa), 0, (sockaddr*)&targetAddr, len);
+  I_LOG("send data size={}", strlen(aaa));
 }
 
 void Client::close() {
@@ -42,5 +47,7 @@ void startClient(const string& serverHost, int serverPort, int timeInSeconds) {
     timeInSeconds --;
     I_LOG("send data [{}]", timeInSeconds);
   }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   client.close();
 }

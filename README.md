@@ -17,7 +17,7 @@
 
 
 ### TODOS
-- [ ] Client发送UDP消息，Server接收UDP消息
+- [X] Client发送UDP消息，Server接收UDP消息
 - [ ] Server接收到消息后，进行回复
 - [ ] Client接收Server返回的消息
 - [ ] 命令行参数解析

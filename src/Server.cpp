@@ -1,3 +1,4 @@
+#include "config.h"
 #include "Server.h"
 #include <iostream>
 #include <string>
@@ -8,6 +9,8 @@ using std::endl;
 using std::string;
 
 Server::Server(int p) : port(p) {
+  D_LOG("init server on port[{}]", port);
+
   if (SocketUtil::startupWSA() == ERR) {
     cout << "WSAStartup error." << endl;
     throw std::runtime_error("WSAStartup error.");
@@ -16,7 +19,7 @@ Server::Server(int p) : port(p) {
   sock = socket(AF_INET, SOCK_DGRAM, 0);
 
   sockaddr_in serverAddr = {0};
-  SocketUtil::setSocketAddr(&serverAddr, nullptr);
+  SocketUtil::setSocketAddr(&serverAddr, "0.0.0.0");
   serverAddr.sin_family = AF_INET;
   serverAddr.sin_port = htons(port);
 
@@ -26,6 +29,9 @@ Server::Server(int p) : port(p) {
     cout << "bind error." << endl;
     throw std::runtime_error("bind error.");
   }
+
+  D_LOG("server socket bind port[{}] success: {}", port, sock);
+
 }
 
 void Server::start() {
@@ -37,7 +43,9 @@ void Server::start() {
   int c = 0;
   while (c < 10) {
     cout << "waiting data..." << endl;
-    int recvNum = recvfrom(sock, recvBuf, 100, 0, (sockaddr*)&peerAddr, (socklen_t*)&addrLen);
+    int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&peerAddr, (socklen_t*)&addrLen);
+    cout << "got data..." << endl;
+
     if (recvNum < 0) {
       auto msg = fmt::format("error: recv_num={}", recvNum);
       E_LOG(msg);

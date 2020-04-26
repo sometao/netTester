@@ -6,19 +6,19 @@
 using std::string;
 
 cxxopts::ParseResult parse(int argc, char* argv[]) {
-  cxxopts::Options options(argv[0], " - example command line options");
+  cxxopts::Options options(argv[0], "NetTester is a tool for net test.");
   try {
 
-    options.positional_help("[optional args]").show_positional_help();
-
+    //options.positional_help("[-s | -c <host>] [options]").show_positional_help();
+    options.custom_help("[-s | -c <host>] [options]");
 
     options.add_options()
       ("s,server", "run in server mode", cxxopts::value<bool>())
       ("c,client", "run in client mode, connecting to <host>", cxxopts::value<string>(),"<host>")
-      ("p,port", " server port to listen on/connect to", cxxopts::value<int>()->default_value("43210"))
+      ("p,port", "server port to listen on/connect to", cxxopts::value<int>()->default_value("43210"), "<port>")
       ("b,bandwidth", "target bandwidth in Kbits/sec", cxxopts::value<int>()->default_value("1024"))
-      ("i,interval", "seconds between periodic bandwidth reports", cxxopts::value<int>()->default_value("1"), "sec")
-      ("t,time", "time in seconds to transmit for", cxxopts::value<int>()->default_value("10"), "sec")
+      ("i,interval", "seconds between periodic bandwidth reports", cxxopts::value<int>()->default_value("1"), "<sec>")
+      ("t,time", "time in seconds to transmit for", cxxopts::value<int>()->default_value("10"), "<sec>")
       ("h,help", "show this help");
 
     auto result = options.parse(argc, argv);
@@ -30,6 +30,7 @@ cxxopts::ParseResult parse(int argc, char* argv[]) {
 
     if (!result.count("s") && !result.count("c")) { 
       std::cout << options.help({""}) << std::endl;
+      exit(0);
     }
 
     return result;

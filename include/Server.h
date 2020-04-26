@@ -1,9 +1,7 @@
+#include "config.h"
 #include "seeker/loggerApi.h"
 #include "seeker/socketUtil.h"
 
-namespace netTester{
-
-}
 
 class Server {
   int port;
