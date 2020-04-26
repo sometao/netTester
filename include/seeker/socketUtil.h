@@ -23,6 +23,17 @@ namespace seeker {
 
 class SocketUtil {
  public:
+  static sockaddr_in createAddr(int port, const std::string& host = "") {
+    sockaddr_in addr = {0};
+    const char * hostData = host.empty() ? nullptr : host.c_str();
+    setSocketAddr(&addr, hostData);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    return addr;
+  }
+
+
+
   static void cleanWSA() {
 #ifdef _WIN32
     WSACleanup();

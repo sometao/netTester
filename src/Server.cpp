@@ -35,7 +35,7 @@ Server::Server(int p) : port(p) {
 }
 
 void Server::start() {
-  SOCKADDR_IN peerAddr;
+  SOCKADDR_IN remoteAddr;
   size_t addrLen = sizeof(SOCKADDR_IN);
 
   char recvBuf[4096] = {};
@@ -43,18 +43,18 @@ void Server::start() {
   int c = 0;
   while (c < 10) {
     cout << "waiting data..." << endl;
-    int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&peerAddr, (socklen_t*)&addrLen);
+    int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&remoteAddr, (socklen_t*)&addrLen);
     if (recvNum < 0) {
       auto msg = fmt::format("error: recv_num={}", recvNum);
       E_LOG(msg);
       throw std::runtime_error(msg);
     }
 
-    sendto(sock, recvBuf, recvNum, 0, (sockaddr*)&peerAddr, addrLen);
+    sendto(sock, recvBuf, recvNum, 0, (sockaddr*)&remoteAddr, addrLen);
 
     c += 1;
     recvBuf[recvNum] = '\0';
-    I_LOG("[\t{}\t]: recv [{} byte] from [{}]: [{}]", c, recvNum, inet_ntoa(peerAddr.sin_addr),
+    I_LOG("[\t{}\t]: recv [{} byte] from [{}]: [{}]", c, recvNum, inet_ntoa(remoteAddr.sin_addr),
           recvBuf);
   }
 }

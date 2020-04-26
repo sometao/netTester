@@ -105,7 +105,7 @@ message(BOTAN_INCLUDE_DIR             =  ${BOTAN_INCLUDE_DIR})
 # Add source to this project's executable.
 add_executable (${PROJECT_NAME}   
   "src/main.cpp" 
- "src/pch.cpp" "src/cmdParser.cpp" "src/Client.cpp" "src/Server.cpp")
+ "src/pch.cpp" "src/cmdParser.cpp" "src/Client.cpp" "src/Server.cpp" "src/UdpConnection.cpp")
 
 
 target_include_directories( ${PROJECT_NAME}  

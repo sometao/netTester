@@ -32,10 +32,10 @@ void Client::sendData(size_t num) {
 void Client::readData()
 {
   static char recvBuf[4096] = {};
-  SOCKADDR_IN peerAddr;
+  SOCKADDR_IN remoteAddr;
   size_t addrLen = sizeof(SOCKADDR_IN);
 
-  int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&peerAddr, (socklen_t*)&addrLen);
+  int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&remoteAddr, (socklen_t*)&addrLen);
   if (recvNum < 0) {
     auto msg = fmt::format("error: recv_num={}", recvNum);
     E_LOG(msg);
