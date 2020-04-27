@@ -3,6 +3,7 @@
 #ifdef _WIN32
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <iostream>
 #else
 #include <unistd.h>
 #include <cstring>
@@ -26,13 +27,10 @@ class SocketUtil {
   static sockaddr_in createAddr(int port, const std::string& host = "") {
     sockaddr_in addr = {0};
     const char * hostData = host.empty() ? nullptr : host.c_str();
-    setSocketAddr(&addr, hostData);
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
+    setSocketAddr(&addr, hostData, port);
     return addr;
   }
-
-
 
   static void cleanWSA() {
 #ifdef _WIN32
@@ -52,7 +50,7 @@ class SocketUtil {
   }
 
 
-  static void setSocketAddr(sockaddr_in* addr, const char* ip) {
+  static void setSocketAddr(sockaddr_in* addr, const char* ip, const int port = -1) {
     if (ip == nullptr) {
 #ifdef _WIN32
       (*addr).sin_addr.S_un.S_addr = htonl(INADDR_ANY);
@@ -66,19 +64,22 @@ class SocketUtil {
       (*addr).sin_addr.s_addr = inet_addr(ip);
 #endif
     }
+
+    if(port != -1) {
+      (*addr).sin_port = htons(port);
+    }
+
   }
 
 
-  static int startupWSA() {
+  static void startupWSA() {
 #ifdef _WIN32
     WSADATA wsaData = {};
     if (WSAStartup(SOCKET_VERSION, &wsaData) != OK) {
-      return ERR;
-    } else {
-      return OK;
+      throw std::runtime_error("WSAStartup failed.");
     }
 #else
-    return OK;
+    //nothing to do.
 #endif
   }
 };

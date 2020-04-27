@@ -1,6 +1,5 @@
 #include "config.h"
 #include "Server.h"
-#include <iostream>
 #include <string>
 
 using seeker::SocketUtil;
@@ -8,61 +7,44 @@ using std::cout;
 using std::endl;
 using std::string;
 
-Server::Server(int p) : port(p) {
-  D_LOG("init server on port[{}]", port);
+Server::Server(int p) {
+  D_LOG("init server on port[{}]", p);
 
-  if (SocketUtil::startupWSA() == ERR) {
-    cout << "WSAStartup error." << endl;
-    throw std::runtime_error("WSAStartup error.");
-  }
+  SocketUtil::startupWSA();
+  conn.setLocalIp("0.0.0.0");
+  conn.setLocalPort(p);
+  conn.init();
 
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-  sockaddr_in serverAddr = {0};
-  SocketUtil::setSocketAddr(&serverAddr, "0.0.0.0");
-  serverAddr.sin_family = AF_INET;
-  serverAddr.sin_port = htons(port);
-
-  if (bind(sock, (sockaddr*)&serverAddr, sizeof(sockaddr_in)) == SOCKET_ERROR) {
-    SocketUtil::closeSocket(sock);
-    SocketUtil::cleanWSA();
-    cout << "bind error." << endl;
-    throw std::runtime_error("bind error.");
-  }
-
-  D_LOG("server socket bind port[{}] success: {}", port, sock);
-
+  D_LOG("server socket bind port[{}] success: {}", p, conn.getSocket());
 }
 
 void Server::start() {
-  SOCKADDR_IN remoteAddr;
-  size_t addrLen = sizeof(SOCKADDR_IN);
-
-  char recvBuf[4096] = {};
+  char recvBuf[4096] = {0};
 
   int c = 0;
-  while (c < 10) {
+  while (c < 100) {
     cout << "waiting data..." << endl;
-    int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&remoteAddr, (socklen_t*)&addrLen);
+
+    int recvNum = conn.recvData(recvBuf, 4096);
     if (recvNum < 0) {
       auto msg = fmt::format("error: recv_num={}", recvNum);
       E_LOG(msg);
       throw std::runtime_error(msg);
     }
 
-    sendto(sock, recvBuf, recvNum, 0, (sockaddr*)&remoteAddr, addrLen);
-
+    conn.reply(recvBuf, recvNum);
     c += 1;
     recvBuf[recvNum] = '\0';
-    I_LOG("[\t{}\t]: recv [{} byte] from [{}]: [{}]", c, recvNum, inet_ntoa(remoteAddr.sin_addr),
-          recvBuf);
+    I_LOG("[{}]: recv [{} byte] from [{}]: [{}]", c, recvNum,
+          inet_ntoa(conn.lastAddr.sin_addr), recvBuf);
   }
 }
 
+
+
 void Server::close() {
   I_LOG("Server finish.");
-  SocketUtil::closeSocket(sock);
-  SocketUtil::cleanWSA();
+  conn.close();
 }
 
 
@@ -73,4 +55,3 @@ void startServer(int port) {
   server.start();
   server.close();
 }
-

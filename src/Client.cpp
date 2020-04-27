@@ -7,40 +7,27 @@
 using seeker::SocketUtil;
 using std::string;
 
-Client::Client(const string& serverHost, int serverPort)
-    : targetHost(serverHost), targetPort(serverPort) {
+Client::Client(const string& serverHost, int serverPort) {
   // Get socket ready
-  if (SocketUtil::startupWSA() == ERR) {
-    E_LOG("WSAStartup error.");
-    throw std::runtime_error("WSAStartup error.");
-  }
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
+  SocketUtil::startupWSA();
 
-  // init target address
-  targetAddr.sin_family = AF_INET;
-  SocketUtil::setSocketAddr(&targetAddr, serverHost.c_str());
-  targetAddr.sin_port = htons(serverPort);
+  conn.setRemoteIp(serverHost);
+  conn.setRemotePort(serverPort);
+
+  conn.init();
+
 }
 
 
 void Client::sendData(size_t num) {
-  static auto len = sizeof(SOCKADDR);
-  sendto(sock, dataBuf, num, 0, (sockaddr*)&targetAddr, len);
+  conn.sendData(dataBuf, num);
   I_LOG("send data: [{}]", string(dataBuf, num));
 }
 
 void Client::readData()
 {
   static char recvBuf[4096] = {};
-  SOCKADDR_IN remoteAddr;
-  size_t addrLen = sizeof(SOCKADDR_IN);
-
-  int recvNum = recvfrom(sock, recvBuf, 4096, 0, (sockaddr*)&remoteAddr, (socklen_t*)&addrLen);
-  if (recvNum < 0) {
-    auto msg = fmt::format("error: recv_num={}", recvNum);
-    E_LOG(msg);
-    throw std::runtime_error(msg);
-  }
+  int recvNum = conn.recvData(recvBuf, 4096);
   recvBuf[recvNum] = '\0';
 
   I_LOG("recv data: [{}]", recvBuf);
@@ -49,8 +36,7 @@ void Client::readData()
 
 void Client::close() {
   I_LOG("client finish.");
-  SocketUtil::closeSocket(sock);
-  SocketUtil::cleanWSA();
+  conn.close();
 }
 
 
