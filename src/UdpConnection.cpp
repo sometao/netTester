@@ -96,6 +96,7 @@ void UdpConnection::reply(char* buf, size_t len) {
 
 int UdpConnection::recvData(char* buf, size_t len) {
   if (inited) {
+    lastAddrLen = sizeof(lastAddr);
     return recvfrom(sock, buf, len, 0, (sockaddr*)&lastAddr, (socklen_t*)&lastAddrLen);
   } else {
     throw std::runtime_error("connection not inited");
