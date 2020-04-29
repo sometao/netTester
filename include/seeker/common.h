@@ -1,5 +1,4 @@
 #pragma once
-#include "seeker/loggerApi.h"
 #include <chrono>
 #include <regex>
 
@@ -14,6 +13,13 @@ class Time {
     using namespace std::chrono;
     auto time_now = system_clock::now();
     auto durationIn = duration_cast<milliseconds>(time_now.time_since_epoch());
+    return durationIn.count();
+  };
+
+  static int64_t microTime() {
+    using namespace std::chrono;
+    auto time_now = system_clock::now();
+    auto durationIn = duration_cast<microseconds>(time_now.time_since_epoch());
     return durationIn.count();
   };
 };
@@ -84,6 +90,30 @@ class String {
       }
     }
     return target.substr(0, i + 1);
+  }
+};
+
+
+class ByteArray {
+ public:
+  template <typename T>
+  static void writeData(uint8_t* buf, T num) {
+    int len(sizeof(T));
+    for (size_t i = 0; i < len; ++i) {
+      buf[i] = (uint8_t)(num >> (i * 8));
+    }
+  }
+
+  template <typename T>
+  static void readData(uint8_t* buf, T& num) {
+    uint8_t len(sizeof(T));
+    static uint8_t byMask(0xFF);
+    num = 0;
+
+    for (size_t i = 0; i < len; ++i) {
+      num <<= 8;
+      num |= (T)(buf[len - 1 - i] & byMask);
+    }
   }
 };
 

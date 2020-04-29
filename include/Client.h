@@ -1,6 +1,7 @@
 #pragma once
 #include "config.h"
 #include <string>
+#include <atomic>
 #include "UdpConnection.h"
 #include "seeker/socketUtil.h"
 
@@ -15,19 +16,18 @@ class Client {
   //const int targetPort;
   //sockaddr_in targetAddr = {0};
   //SOCKET sock;
-  char* dataBuf = "123456789ABCDEFGHIJKLMN";
+  //char* dataBuf = "123456789ABCDEFGHIJKLMN";
   UdpConnection conn;
+  std::atomic<int> nextMid{0};
+
+  int genMid();
 
  public:
   Client(const string& serverHost, int serverPort);
 
-  void sendData(size_t num);
-
-  void readData();
-
   void close();
 
-
+  void startRtt();
 
 
 };
