@@ -101,7 +101,7 @@ void Client::startRtt() {
 
 
 
-  // TODO here..
+  // TODO server process RTT msg
 }
 
 
