@@ -5,7 +5,8 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
-#include "Message.h"
+
+#define CLIENT_BUF_SIZE 2048
 
 using seeker::SocketUtil;
 using std::string;
@@ -13,6 +14,16 @@ using std::string;
 int Client::genMid() {
   auto mid = nextMid.fetch_add(1);
   return mid;
+}
+
+void Client::sendMsg(const Message& msg) {
+  static uint8_t sendBuf[CLIENT_BUF_SIZE]{0};
+
+  size_t len = msg.getLength();
+  msg.getBinary(sendBuf, CLIENT_BUF_SIZE);
+  conn.sendData((char*)sendBuf, len);
+  memset(sendBuf, 0, len);
+  T_LOG("send Message, msgType={} msgId={}", msg.msgType, msg.msgId);
 }
 
 Client::Client(const string& serverHost, int serverPort) {
@@ -32,36 +43,59 @@ void Client::close() {
 }
 
 void Client::startRtt() {
-  constexpr size_t bufSize = 2048;
-  uint8_t sendBuf[bufSize];
-  uint8_t recvBuf[bufSize];
+
+  static uint8_t recvBuf[CLIENT_BUF_SIZE]{0};
+
 
   int time = 10;
   TestRequest req(TestType::rtt, time, genMid(), seeker::Time::microTime());
 
-  size_t len = req.getLength();
-  req.getBinary(sendBuf, bufSize);
-  conn.sendData((char*)sendBuf, len);
+  sendMsg(req);
   I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
 
 
-  // Waiting comfirm.
-  auto recvLen = conn.recvData((char*)recvBuf, bufSize);
-  TestConfirm confirm(recvBuf);
-  I_LOG("receive TestConfirm, result={} reMsgId={} testId={}",
-        confirm.result,
-        confirm.reMsgId,
-        req.testId);
+  // Waiting confirm.
+  auto testId = 0;
+  auto recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
+  if(recvLen > 0) {
+    TestConfirm confirm(recvBuf);
+    I_LOG("receive TestConfirm, result={} reMsgId={} testId={}",
+      confirm.result,
+      confirm.reMsgId,
+      req.testId);
+    testId = confirm.testId;
+  } else {
+    throw std::runtime_error("TestConfirm receive error.");
+  }
 
 
   int count = 10;
+  int testPacketLen = 64;
 
   while(count > 0) {
     count--;
+    RttTestMsg msg(testPacketLen, testId, genMid(), seeker::Time::microTime());
+    sendMsg(msg);
+    I_LOG("send RttTestMsg, msgId={} testId={} time={}",
+      msg.msgId,
+      msg.testId,
+      msg.timestamp
+    );
 
 
-
-  
+    recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
+    if(recvLen > 0) {
+      RttTestMsg rttResponse(recvBuf);
+      auto diffTime = seeker::Time::microTime() - rttResponse.timestamp;
+      I_LOG("receive RttTestMsg, msgId={} testId={} time={} diff={}ms",
+        rttResponse.msgId,
+        rttResponse.testId,
+        rttResponse.timestamp,
+        (double)diffTime/1000
+        );
+    } else {
+      throw std::runtime_error("TestConfirm receive error.");
+    }
   }
 
 

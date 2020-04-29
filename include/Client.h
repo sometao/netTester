@@ -4,9 +4,11 @@
 #include <atomic>
 #include "UdpConnection.h"
 #include "seeker/socketUtil.h"
+#include "Message.h"
 
 
 using std::string;
+
 
 
 class Client {
@@ -21,6 +23,8 @@ class Client {
   std::atomic<int> nextMid{0};
 
   int genMid();
+
+  void sendMsg(const Message& msg);
 
  public:
   Client(const string& serverHost, int serverPort);
