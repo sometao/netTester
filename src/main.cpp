@@ -1,3 +1,12 @@
+/**
+  文件注释样例，参考： http://www.edparrish.net/common/cppdoc.html
+
+  @project netTester
+  @author Tao Zhang, Tao, Tao
+  @since 2020/4/26
+  @version 0.1.3 2020/4/30
+*/
+
 #include "config.h"
 #include "cxxopts.hpp"
 #include <iostream>

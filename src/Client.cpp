@@ -1,3 +1,12 @@
+/**
+  文件注释样例，参考： http://www.edparrish.net/common/cppdoc.html
+  socket客户端实现
+
+  @author Tao Zhang, Tao, Tao
+  @since 2020/4/26
+  @version 0.1.3 2020/4/30
+*/
+
 #include "Client.h"
 #include "seeker/loggerApi.h"
 #include "seeker/common.h"
@@ -17,12 +26,7 @@ int Client::genMid() {
 }
 
 void Client::sendMsg(const Message& msg) {
-  static uint8_t sendBuf[CLIENT_BUF_SIZE]{0};
-
-  size_t len = msg.getLength();
-  msg.getBinary(sendBuf, CLIENT_BUF_SIZE);
-  conn.sendData((char*)sendBuf, len);
-  memset(sendBuf, 0, len);
+  Message::sendMsg(msg, conn);
   T_LOG("send Message, msgType={} msgId={}", msg.msgType, msg.msgId);
 }
 

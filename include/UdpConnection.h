@@ -1,3 +1,12 @@
+/**
+  文件注释样例，参考： http://www.edparrish.net/common/cppdoc.html
+  socket连接流程封装
+
+  @project netTester
+  @author Tao Zhang, Tao, Tao
+  @since 2020/4/26
+  @version 0.1.3 2020/4/30
+*/
 #pragma once
 #include "config.h"
 #include <string>
