@@ -70,9 +70,19 @@ class Message {
     seeker::ByteArray::readData(data + 0, v);
   }
 
+  static void getTestId(uint8_t* data, uint16_t& v) {
+    seeker::ByteArray::readData(data + 1, v);
+  }
+
+  static void getMsgId(uint8_t* data, int& v) { 
+    seeker::ByteArray::readData(data + 3, v); 
+  }
+
   static void getTimestamp(uint8_t* data, int64_t& v) {
     seeker::ByteArray::readData(data + 7, v);
   }
+
+
 
   static void sendMsg(const Message& msg, UdpConnection& conn) {
     static uint8_t buf[MSG_SEND_BUF_SIZE]{0};
@@ -81,7 +91,7 @@ class Message {
     conn.sendData((char*)buf, len);
     memset(buf, 0, len);
   }
-  
+
   static void replyMsg(const Message& msg, UdpConnection& conn) {
     static uint8_t buf[MSG_SEND_BUF_SIZE]{0};
     size_t len = msg.getLength();
@@ -94,10 +104,6 @@ class Message {
     static std::atomic<int> nextMid{0};
     return nextMid.fetch_add(1);
   }
-
-
-
-
 };
 
 
@@ -180,8 +186,7 @@ class RttTestMsg : public Message {
     seeker::ByteArray::readData(data + 15, payloadLen);
   }
 
-  RttTestMsg(int len, int testId, int mid)
-      : Message(msgType, testId, mid), payloadLen(len) {}
+  RttTestMsg(int len, int testId, int mid) : Message(msgType, testId, mid), payloadLen(len) {}
 
   size_t getLength() const override { return headLen() + (size_t)payloadLen; }
 

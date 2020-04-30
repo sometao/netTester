@@ -42,8 +42,8 @@ int main(int argc, char* argv[]) {
     }
 
 
-
-  
+  } catch(std::runtime_error ex) {         
+    cout << "runtime_error: " << ex.what() << endl;
   } catch(...) {         
     cout << "unknown error." << endl;
   }

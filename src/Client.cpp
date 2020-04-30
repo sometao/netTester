@@ -27,7 +27,7 @@ int Client::genMid() {
 
 void Client::sendMsg(const Message& msg) {
   Message::sendMsg(msg, conn);
-  T_LOG("send Message, msgType={} msgId={}", msg.msgType, msg.msgId);
+  //T_LOG("send Message, msgType={} msgId={}", msg.msgType, msg.msgId);
 }
 
 Client::Client(const string& serverHost, int serverPort) {
@@ -47,7 +47,6 @@ void Client::close() {
 }
 
 void Client::startRtt() {
-
   static uint8_t recvBuf[CLIENT_BUF_SIZE]{0};
 
 
@@ -55,53 +54,50 @@ void Client::startRtt() {
   TestRequest req(TestType::rtt, time, genMid());
 
   sendMsg(req);
-  I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
+  //I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
 
 
   // Waiting confirm.
   auto testId = 0;
   auto recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
-  if(recvLen > 0) {
+  if (recvLen > 0) {
     TestConfirm confirm(recvBuf);
     I_LOG("receive TestConfirm, result={} reMsgId={} testId={}",
-      confirm.result,
-      confirm.reMsgId,
-      req.testId);
+          confirm.result,
+          confirm.reMsgId,
+          req.testId);
     testId = confirm.testId;
+    memset(recvBuf, 0, recvLen);
   } else {
-    throw std::runtime_error("TestConfirm receive error.");
+    throw std::runtime_error("TestConfirm receive error. recvLen=" + std::to_string(recvLen));
   }
 
 
-  int count = 10;
+  int count = 20;
   int testPacketLen = 64;
 
-  while(count > 0) {
+  while (count > 0) {
     count--;
     RttTestMsg msg(testPacketLen, testId, genMid());
     sendMsg(msg);
-    I_LOG("send RttTestMsg, msgId={} testId={} time={}",
-      msg.msgId,
-      msg.testId,
-      msg.timestamp
-    );
-
+    D_LOG("send RttTestMsg, msgId={} testId={} time={}", msg.msgId, msg.testId, msg.timestamp);
 
     recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
-    if(recvLen > 0) {
+    if (recvLen > 0) {
       RttTestMsg rttResponse(recvBuf);
+      memset(recvBuf, 0, recvLen);
       auto diffTime = seeker::Time::microTime() - rttResponse.timestamp;
       I_LOG("receive RttTestMsg, msgId={} testId={} time={} diff={}ms",
-        rttResponse.msgId,
-        rttResponse.testId,
-        rttResponse.timestamp,
-        (double)diffTime/1000
-        );
+            rttResponse.msgId,
+            rttResponse.testId,
+            rttResponse.timestamp,
+            (double)diffTime / 1000);
     } else {
-      throw std::runtime_error("TestConfirm receive error.");
+      throw std::runtime_error("RttTestMsg receive error. recvLen=" + std::to_string(recvLen));
     }
-  }
 
+
+  }
 
 
 
@@ -113,11 +109,8 @@ void Client::startRtt() {
 void startClient(const string& serverHost, int serverPort, int timeInSeconds) {
   I_LOG("Starting send data to {}:{}", serverHost, serverPort);
   Client client(serverHost, serverPort);
-  while (timeInSeconds > 0) {
-    I_LOG("send data [{}]", timeInSeconds);
-    // client.sendData(10);
-    // client.readData();
-    timeInSeconds--;
-  }
+
+  client.startRtt();
+
   client.close();
 }

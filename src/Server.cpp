@@ -35,41 +35,43 @@ Server::Server(int p) {
 void Server::start() {
   static uint8_t recvBuf[SERVER_BUF_SIZE]{0};
 
-
-
-  // Waiting msg.
-  auto testId = 0;
-  auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
-  if (recvLen > 0) {
-    uint8_t msgType;
-    Message::getMsgType(recvBuf, msgType);
-    switch ((MessageType)msgType) {
-      case MessageType::testRequest: {
-        TestRequest req(recvBuf);
-        T_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.msgType);
-        int rst = currentTest > 0 ? 1 : 2;
-        TestConfirm response(rst, req.msgId, Message::genMid());
-        Message::replyMsg(response, conn);
-        T_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId, (int)response.msgType, response.result);
-        break;
+  while (true) {
+    //D_LOG("Waiting msg...");
+    auto testId = 0;
+    auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
+    if (recvLen > 0) {
+      uint8_t msgType;
+      Message::getMsgType(recvBuf, msgType);
+      int msgId = 0;
+      Message::getMsgId(recvBuf, msgId);
+      switch ((MessageType)msgType) {
+        case MessageType::testRequest: {
+          TestRequest req(recvBuf);
+          D_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.msgType);
+          int rst = currentTest > 0 ? 2 : 1;
+          TestConfirm response(rst, req.msgId, Message::genMid());
+          Message::replyMsg(response, conn);
+          D_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
+            (int)response.msgType, response.result);
+          break;
+        }
+        case MessageType::rttTestMsg: {
+          // TODO here...
+          conn.reply((char*)recvBuf, recvLen);
+          //D_LOG("Reply rttTestMsg, msgId={}", msgId);
+          break;
+        }
+        default:
+          W_LOG("Got unknown msg, ignore it. msgType={}, msgId={}", msgType, msgId);
+          break;
       }
-
-      case MessageType::rttTestMsg: {
-        // TODO here...
-        break;
-      }
-
-      default:
-        break;
+    } else {
+      throw std::runtime_error("msg receive error.");
     }
-
-
-    TestConfirm confirm(recvBuf);
-
-    testId = confirm.testId;
-  } else {
-    throw std::runtime_error("msg receive error.");
   }
+
+
+
 
 
   // char recvBuf[4096] = {0};
