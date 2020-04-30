@@ -52,7 +52,7 @@ void Client::startRtt() {
 
 
   int time = 10;
-  TestRequest req(TestType::rtt, time, genMid(), seeker::Time::microTime());
+  TestRequest req(TestType::rtt, time, genMid());
 
   sendMsg(req);
   I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
@@ -78,7 +78,7 @@ void Client::startRtt() {
 
   while(count > 0) {
     count--;
-    RttTestMsg msg(testPacketLen, testId, genMid(), seeker::Time::microTime());
+    RttTestMsg msg(testPacketLen, testId, genMid());
     sendMsg(msg);
     I_LOG("send RttTestMsg, msgId={} testId={} time={}",
       msg.msgId,

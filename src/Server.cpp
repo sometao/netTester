@@ -12,6 +12,7 @@
 #include "Server.h"
 #include <string>
 #include "Message.h"
+#include "seeker/loggerApi.h"
 
 #define SERVER_BUF_SIZE 2048
 
@@ -45,7 +46,11 @@ void Server::start() {
     switch ((MessageType)msgType) {
       case MessageType::testRequest: {
         TestRequest req(recvBuf);
-        // TODO  here...
+        T_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.msgType);
+        int rst = currentTest > 0 ? 1 : 2;
+        TestConfirm response(rst, req.msgId, Message::genMid());
+        Message::replyMsg(response, conn);
+        T_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId, (int)response.msgType, response.result);
         break;
       }
 
@@ -63,7 +68,7 @@ void Server::start() {
 
     testId = confirm.testId;
   } else {
-    throw std::runtime_error("TestConfirm receive error.");
+    throw std::runtime_error("msg receive error.");
   }
 
 

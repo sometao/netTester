@@ -11,13 +11,14 @@
 #pragma once
 #include <config.h>
 #include <iostream>
+#include <atomic>
 #include <cstring>
 #include "seeker/common.h"
 #include "UdpConnection.h"
 
 #define MSG_SEND_BUF_SIZE 2048
 
-enum class MessageType{
+enum class MessageType {
   testRequest = 1,
   testConfirm = 2,
   rttTestMsg = 3,
@@ -49,8 +50,8 @@ class Message {
 
   Message(uint8_t* data) { reset(data); }
 
-  Message(uint8_t mt, uint16_t tid, int mid, int64_t t)
-      : msgType(mt), testId(tid), msgId(mid), timestamp(t) {}
+  Message(uint8_t mt, uint16_t tid, int mid)
+      : msgType(mt), testId(tid), msgId(mid), timestamp(seeker::Time::microTime()) {}
 
   void reset(uint8_t* data) {
     using seeker::ByteArray;
@@ -74,12 +75,29 @@ class Message {
   }
 
   static void sendMsg(const Message& msg, UdpConnection& conn) {
-    static uint8_t sendBuf[MSG_SEND_BUF_SIZE]{0};
+    static uint8_t buf[MSG_SEND_BUF_SIZE]{0};
     size_t len = msg.getLength();
-    msg.getBinary(sendBuf, MSG_SEND_BUF_SIZE);
-    conn.sendData((char*)sendBuf, len);
-    memset(sendBuf, 0, len);
+    msg.getBinary(buf, MSG_SEND_BUF_SIZE);
+    conn.sendData((char*)buf, len);
+    memset(buf, 0, len);
   }
+  
+  static void replyMsg(const Message& msg, UdpConnection& conn) {
+    static uint8_t buf[MSG_SEND_BUF_SIZE]{0};
+    size_t len = msg.getLength();
+    msg.getBinary(buf, MSG_SEND_BUF_SIZE);
+    conn.reply((char*)buf, len);
+    memset(buf, 0, len);
+  }
+
+  static int genMid() {
+    static std::atomic<int> nextMid{0};
+    return nextMid.fetch_add(1);
+  }
+
+
+
+
 };
 
 
@@ -103,8 +121,8 @@ class TestRequest : public Message {
     seeker::ByteArray::readData(data + 19, testTime);
   }
 
-  TestRequest(TestType tType, int tTime, int mid, int64_t t)
-      : Message(msgType, 0, mid, t), testType((int)tType), testTime(tTime) {}
+  TestRequest(TestType tType, int tTime, int mid)
+      : Message(msgType, 0, mid), testType((int)tType), testTime(tTime) {}
 
   size_t getLength() const override { return headLen() + 8; }
 
@@ -125,7 +143,7 @@ class TestConfirm : public Message {
   int result;   //  1 for OK, 2 for NO           index: 15.
   int reMsgId;  //  reply mid.                   index: 19.
 
-  static const uint8_t msgType =  (uint8_t)MessageType::testConfirm;
+  static const uint8_t msgType = (uint8_t)MessageType::testConfirm;
 
   TestConfirm() = default;
 
@@ -134,8 +152,8 @@ class TestConfirm : public Message {
     seeker::ByteArray::readData(data + 19, reMsgId);
   }
 
-  TestConfirm(int rst, int reId, int mid, int64_t t)
-      : Message(msgType, 0, mid, t), result(rst), reMsgId(reId) {}
+  TestConfirm(int rst, int reId, int mid)
+      : Message(msgType, 0, mid), result(rst), reMsgId(reId) {}
 
   size_t getLength() const override { return headLen() + 8; }
 
@@ -155,15 +173,15 @@ class RttTestMsg : public Message {
  public:
   int payloadLen;  //                       index: 15.
 
-  static const uint8_t msgType =  (uint8_t)MessageType::rttTestMsg;
+  static const uint8_t msgType = (uint8_t)MessageType::rttTestMsg;
 
 
   RttTestMsg(uint8_t* data) : Message(data) {
     seeker::ByteArray::readData(data + 15, payloadLen);
   }
 
-  RttTestMsg(int len, int testId, int mid, int64_t t)
-      : Message(msgType, testId, mid, t), payloadLen(len) {}
+  RttTestMsg(int len, int testId, int mid)
+      : Message(msgType, testId, mid), payloadLen(len) {}
 
   size_t getLength() const override { return headLen() + (size_t)payloadLen; }
 
