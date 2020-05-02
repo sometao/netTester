@@ -80,7 +80,7 @@ void Client::startRtt() {
     count--;
     RttTestMsg msg(testPacketLen, testId, genMid());
     sendMsg(msg);
-    D_LOG("send RttTestMsg, msgId={} testId={} time={}", msg.msgId, msg.testId, msg.timestamp);
+    T_LOG("send RttTestMsg, msgId={} testId={} time={}", msg.msgId, msg.testId, msg.timestamp);
 
     recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
     if (recvLen > 0) {

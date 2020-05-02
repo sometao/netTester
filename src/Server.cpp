@@ -47,11 +47,11 @@ void Server::start() {
       switch ((MessageType)msgType) {
         case MessageType::testRequest: {
           TestRequest req(recvBuf);
-          D_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.msgType);
+          T_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.msgType);
           int rst = currentTest > 0 ? 2 : 1;
           TestConfirm response(rst, req.msgId, Message::genMid());
           Message::replyMsg(response, conn);
-          D_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
+          T_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
             (int)response.msgType, response.result);
           break;
         }
@@ -78,7 +78,7 @@ void Server::start() {
 
   // int c = 0;
   // while (c < 100) {
-  //  cout << "waiting data..." << endl;
+  // cout << "waiting data..." << endl;
 
   //  int recvNum = conn.recvData(recvBuf, 4096);
   //  if (recvNum < 0) {
