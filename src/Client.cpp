@@ -21,9 +21,7 @@
 using seeker::SocketUtil;
 using std::string;
 
-int Client::genMid() {
-  return  nextMid.fetch_add(1);
-}
+int Client::genMid() { return nextMid.fetch_add(1); }
 
 void Client::sendMsg(const Message& msg) {
   Message::sendMsg(msg, conn);
@@ -49,6 +47,7 @@ void Client::close() {
 void Client::startRtt(int testTimes, int packetSize) {
   uint8_t recvBuf[CLIENT_BUF_SIZE]{0};
 
+  assert(packetSize >= 24);
 
   TestRequest req(TestType::rtt, 0, genMid());
 
@@ -126,7 +125,7 @@ void Client::startBandwidth(uint32_t bandwidth,
       throw std::runtime_error("bandwidthUnit error: " + std::to_string(bandwidthUnit));
   }
 
-  assert(packetSize >= 16);
+  assert(packetSize >= 24);
   assert(packetSize <= 1500);
   assert(bandwidthValue < (uint64_t)10 * 1024 * 1024 * 1024 + 1);
 
@@ -162,30 +161,37 @@ void Client::startBandwidth(uint32_t bandwidth,
   const int restPacketsPerSecond = packetsPerSecond - (packestPerGroup * groupsPerSecond);
 
 
-  auto startTime = seeker::Time::currentTime();
-  
 
   uint8_t sendBuf[CLIENT_BUF_SIZE]{0};
-  RttTestMsg msg(packetSize, testId, genMid());
+
+  //TODO find how many group should one seconds have;
+  //TODO find packets per group
+  //TODO send a group packets and check whether sleep or not.
 
 
+  BandwidthTestMsg msg(packetSize, testId, 0, genMid());
   size_t len = msg.getLength();
   msg.getBinary(sendBuf, MSG_SEND_BUF_SIZE);
-  conn.sendData((char*)sendBuf, len);
-  memset(sendBuf, 0, len);
 
-  for(int passedTime = 0; passedTime = testSeconds * 1000; ) {
+  int testNum = 0;
+  int64_t startTime = seeker::Time::currentTime();
+  int64_t endTime = startTime + ((int64_t)testSeconds * 1000);
+  int passedTime = 0;
+  for (; seeker::Time::currentTime() < endTime * 1000;) {
     for (int g = 0; g < groupsPerSecond; g++) {
       for (int i = 0; i < packestPerGroup; i++) {
-
+        BandwidthTestMsg::update(sendBuf, genMid(), testNum, seeker::Time::microTime());
+        conn.sendData((char*)sendBuf, len);
+        testNum += 1;
       }
+      passedTime = seeker::Time::currentTime() - startTime;
     }
 
-    for(int i = 0; i < restPacketsPerSecond; i++) {
+    for (int i = 0; i < restPacketsPerSecond; i++) {
 
     }
+    passedTime = seeker::Time::currentTime() - startTime;
   }
-
 
 
 
