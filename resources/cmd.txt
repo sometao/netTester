@@ -1,0 +1,11 @@
+
+iperf -s -p 43210
+
+
+iperf -c HOST -u -i -1 -b 1M
+
+iperf -c HOST -u -i 1 -p 43210 -b 1000K
+
+
+
+
