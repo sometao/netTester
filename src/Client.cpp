@@ -15,6 +15,7 @@
 #include <iostream>
 #include <thread>
 #include <cassert>
+#include <cmath>
 
 #define CLIENT_BUF_SIZE 2048
 
@@ -125,6 +126,8 @@ void Client::startBandwidth(uint32_t bandwidth,
       throw std::runtime_error("bandwidthUnit error: " + std::to_string(bandwidthUnit));
   }
 
+
+  assert(testSeconds <= 100);
   assert(packetSize >= 24);
   assert(packetSize <= 1500);
   assert(bandwidthValue < (uint64_t)10 * 1024 * 1024 * 1024 + 1);
@@ -154,68 +157,43 @@ void Client::startBandwidth(uint32_t bandwidth,
 
 
 
-  const int packetsPerSecond = bandwidthValue / packetSize;
-  const int groupsPerSecond = 250;
-
-  const int packestPerGroup = packetsPerSecond / groupsPerSecond;
-  const int restPacketsPerSecond = packetsPerSecond - (packestPerGroup * groupsPerSecond);
-
-
-
   uint8_t sendBuf[CLIENT_BUF_SIZE]{0};
 
-  //TODO find how many group should one seconds have;
-  //TODO find packets per group
-  //TODO send a group packets and check whether sleep or not.
+  // TODO find how many group should one seconds have;
+  // TODO find packets per group
+  // TODO send a group packets and check whether sleep or not.
 
 
   BandwidthTestMsg msg(packetSize, testId, 0, genMid());
   size_t len = msg.getLength();
   msg.getBinary(sendBuf, MSG_SEND_BUF_SIZE);
 
+
+
+  const int testTimeMs = testSeconds * 1000;
+  const int groupTimeMs = 5;
+  const uint64_t packetsPerSecond = bandwidthValue / packetSize;
+  const int packestPerGroup = std::ceil((double)packetsPerSecond * groupTimeMs / 1000);
+
+  const double packetsIntervalMs = 1000 / packetsPerSecond;
+
+  int passedTime = 0;
   int testNum = 0;
   int64_t startTime = seeker::Time::currentTime();
   int64_t endTime = startTime + ((int64_t)testSeconds * 1000);
-  int passedTime = 0;
-  for (; seeker::Time::currentTime() < endTime * 1000;) {
-    for (int g = 0; g < groupsPerSecond; g++) {
-      for (int i = 0; i < packestPerGroup; i++) {
-        BandwidthTestMsg::update(sendBuf, genMid(), testNum, seeker::Time::microTime());
-        conn.sendData((char*)sendBuf, len);
-        testNum += 1;
-      }
-      passedTime = seeker::Time::currentTime() - startTime;
+
+  while (seeker::Time::currentTime() < endTime) {
+
+    for (int i = 0; i < packestPerGroup; i++) {
+      BandwidthTestMsg::update(sendBuf, genMid(), testNum, seeker::Time::microTime());
+      conn.sendData((char*)sendBuf, len);
+      testNum += 1;
     }
 
-    for (int i = 0; i < restPacketsPerSecond; i++) {
-
-    }
     passedTime = seeker::Time::currentTime() - startTime;
-  }
-
-
-
-  int count = 20;
-  int testPacketLen = 64;
-
-  while (count > 0) {
-    count--;
-    RttTestMsg msg(testPacketLen, testId, genMid());
-    sendMsg(msg);
-    T_LOG("send RttTestMsg, msgId={} testId={} time={}", msg.msgId, msg.testId, msg.timestamp);
-
-    recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
-    if (recvLen > 0) {
-      RttTestMsg rttResponse(recvBuf);
-      memset(recvBuf, 0, recvLen);
-      auto diffTime = seeker::Time::microTime() - rttResponse.timestamp;
-      I_LOG("receive RttTestMsg, msgId={} testId={} time={} diff={}ms",
-            rttResponse.msgId,
-            rttResponse.testId,
-            rttResponse.timestamp,
-            (double)diffTime / 1000);
-    } else {
-      throw std::runtime_error("RttTestMsg receive error. recvLen=" + std::to_string(recvLen));
+    int aheadTime = (testNum * packetsIntervalMs) - passedTime;
+    if(aheadTime > 5) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(aheadTime - 2));
     }
   }
 }
