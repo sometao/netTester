@@ -30,8 +30,6 @@ class Client {
   UdpConnection conn;
   std::atomic<int> nextMid{0};
 
-  int genMid();
-
   void sendMsg(const Message& msg);
 
  public:

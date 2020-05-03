@@ -22,6 +22,7 @@ enum class MessageType {
   testConfirm = 2,
   rttTestMsg = 3,
   bandwidthTestMsg = 4,
+  bandwidthFinish = 5,
 };
 
 class Message {
@@ -203,7 +204,6 @@ class RttTestMsg : public Message {
 };
 
 
-// TODO BAND_TEST_MSG
 class BandwidthTestMsg : public Message {
  public:
   int payloadLen;        //                       index: 15.
@@ -221,6 +221,10 @@ class BandwidthTestMsg : public Message {
     seeker::ByteArray::writeData(data + 3, mId);
     seeker::ByteArray::writeData(data + 7, ts);
     seeker::ByteArray::writeData(data + 19, testNum);
+  }
+
+  static void getTestNum(uint8_t* data, int& testNum ){
+    seeker::ByteArray::readData(data + 19, testNum);
   }
 
   BandwidthTestMsg(int packetSize, int testId, int testNumber, int mid)

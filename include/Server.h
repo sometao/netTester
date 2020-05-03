@@ -15,14 +15,13 @@
 
 
 class Server {
-  //int port;
-  //SOCKET sock;
 
   UdpConnection conn{};
 
   int genTestId();
-  int currentTest{-1};
+  uint16_t currentTest{0};
 
+  void bandwidthTest(int testSeconds);
 
  public:
   Server(int p);

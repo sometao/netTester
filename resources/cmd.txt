@@ -7,5 +7,7 @@ iperf -c HOST -u -i -1 -b 1M
 iperf -c HOST -u -i 1 -p 43210 -b 1000K
 
 
-
+server端看结果（最终结果样例）
+[ ID] Interval       Transfer     Bandwidth       Jitter   Lost/Total Datagrams
+[  3]  0.0-60.0 sec  1.42 GBytes    203 Mbits/sec  0.007 ms  178/1034483 (0.017%)
 

@@ -22,7 +22,6 @@
 using seeker::SocketUtil;
 using std::string;
 
-int Client::genMid() { return nextMid.fetch_add(1); }
 
 void Client::sendMsg(const Message& msg) {
   Message::sendMsg(msg, conn);
@@ -50,7 +49,7 @@ void Client::startRtt(int testTimes, int packetSize) {
 
   assert(packetSize >= 24);
 
-  TestRequest req(TestType::rtt, 0, genMid());
+  TestRequest req(TestType::rtt, 0, Message::genMid());
 
   sendMsg(req);
   I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
@@ -75,7 +74,7 @@ void Client::startRtt(int testTimes, int packetSize) {
 
   while (testTimes > 0) {
     testTimes--;
-    RttTestMsg msg(packetSize, testId, genMid());
+    RttTestMsg msg(packetSize, testId, Message::genMid());
     sendMsg(msg);
     T_LOG("send RttTestMsg, msgId={} testId={} time={}", msg.msgId, msg.testId, msg.timestamp);
 
@@ -134,7 +133,7 @@ void Client::startBandwidth(uint32_t bandwidth,
 
 
   uint8_t recvBuf[CLIENT_BUF_SIZE]{0};
-  TestRequest req(TestType::bandwidth, testSeconds, genMid());
+  TestRequest req(TestType::bandwidth, testSeconds, Message::genMid());
 
   sendMsg(req);
   I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
@@ -164,10 +163,9 @@ void Client::startBandwidth(uint32_t bandwidth,
   // TODO send a group packets and check whether sleep or not.
 
 
-  BandwidthTestMsg msg(packetSize, testId, 0, genMid());
+  BandwidthTestMsg msg(packetSize, testId, 0, Message::genMid());
   size_t len = msg.getLength();
   msg.getBinary(sendBuf, MSG_SEND_BUF_SIZE);
-
 
 
   const int testTimeMs = testSeconds * 1000;
@@ -185,7 +183,7 @@ void Client::startBandwidth(uint32_t bandwidth,
   while (seeker::Time::currentTime() < endTime) {
 
     for (int i = 0; i < packestPerGroup; i++) {
-      BandwidthTestMsg::update(sendBuf, genMid(), testNum, seeker::Time::microTime());
+      BandwidthTestMsg::update(sendBuf, Message::genMid(), testNum, seeker::Time::microTime());
       conn.sendData((char*)sendBuf, len);
       testNum += 1;
     }
