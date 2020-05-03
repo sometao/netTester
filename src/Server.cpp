@@ -14,6 +14,7 @@
 #include "seeker/loggerApi.h"
 #include <string>
 #include <set>
+#include <iostream>
 
 #define SERVER_BUF_SIZE 2048
 
@@ -27,20 +28,56 @@ int Server::genTestId() {
   return nextTestId.fetch_add(1);
 }
 
+
+string formatTransfer(const uint64_t& dataSize) {
+  static uint32_t Gbytes = 1024 * 1024 * 1024;
+  static uint32_t Mbytes = 1024 * 1024;
+  static uint32_t Kbytes = 1024;
+  string rst{};
+  if (dataSize > Gbytes) {
+    rst = fmt::format("{:.{}f}Gbytes", (double)dataSize / Gbytes, 3);
+  } else if (dataSize > Mbytes) {
+    rst = fmt::format("{:.{}f}Mbytes", (double)dataSize / Mbytes, 3);
+  } else if (dataSize > Kbytes) {
+    rst = fmt::format("{:.{}f}Kbytes", (double)dataSize / Kbytes, 3);
+  } else {
+    rst = fmt::format("{}Gbytes", dataSize);
+  }
+  return rst;
+}
+
+string formatBandwidth(const uint32_t& bytesPerSecond) {
+  static uint32_t Gbits = 1024 * 1024 * 1024;
+  static uint32_t Mbits = 1024 * 1024;
+  static uint32_t Kbits = 1024;
+  uint64_t bitsPerSecond = (uint64_t)bytesPerSecond * 8;
+
+  string rst{};
+  if (bitsPerSecond > Gbits) {
+    rst = fmt::format("{:.{}f}Gbits/sec", (double)bitsPerSecond / Gbits, 3);
+  } else if (bitsPerSecond > Mbits) {
+    rst = fmt::format("{:.{}f}Mbits/sec", (double)bitsPerSecond / Mbits, 3);
+  } else if (bitsPerSecond > Kbits) {
+    rst = fmt::format("{:.{}f}Kbits/sec", (double)bitsPerSecond / Kbits, 3);
+  } else {
+    rst = fmt::format("{}bits/sec", bitsPerSecond);
+  }
+  return rst;
+}
+
 void Server::bandwidthTest(int testSeconds) {
   uint8_t recvBuf[SERVER_BUF_SIZE]{0};
-
 
   uint64_t totalRecvByte = 0;
   int64_t maxDelay = INT_MIN;
   int64_t minDelay = INT_MAX;
   std::set<int> mayMissedTestNum;
   int expectTestNum = 0;
-  int startTimeMs = -1;
-  int lastArrivalTimeMs = -1;
+  int64_t startTimeMs = -1;
+  int64_t lastArrivalTimeMs = -1;
 
   while (true) {
-    // D_LOG("Waiting msg...");
+    T_LOG("bandwidthTest Waiting msg...");
     auto testId = 0;
     auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
     int64_t delay;
@@ -57,6 +94,7 @@ void Server::bandwidthTest(int testSeconds) {
       Message::getTimestamp(recvBuf, ts);
       BandwidthTestMsg::getTestNum(recvBuf, testNum);
       if (msgType == (uint8_t)MessageType::bandwidthTestMsg && testId == currentTest) {
+        T_LOG("receive a BandwidthTestMsg, testNum={}", testNum);
         lastArrivalTimeMs = seeker::Time::currentTime();
         if (startTimeMs < 0) {
           startTimeMs = lastArrivalTimeMs;
@@ -69,10 +107,8 @@ void Server::bandwidthTest(int testSeconds) {
           pktCount += 1;
           expectTestNum += 1;
         } else if (testNum < expectTestNum) {
-          // TODO find pkt in mayMissedTestNum.
           auto search = mayMissedTestNum.find(testNum);
-          if(search != mayMissedTestNum.end()) {
-            //find it.
+          if (search != mayMissedTestNum.end()) {
             mayMissedTestNum.erase(search);
             pktCount += 1;
           }
@@ -95,17 +131,41 @@ void Server::bandwidthTest(int testSeconds) {
           expectTestNum = testNum + 1;
         }
       } else if (msgType == (uint8_t)MessageType::bandwidthFinish && testId == currentTest) {
-        // TODO print report, save report, send report.
+        auto intervalMs = lastArrivalTimeMs - startTimeMs;
+        auto jitter = maxDelay - minDelay;
+        int totalPkt;
+        BandwidthFinish::getTotalPkt(recvBuf, totalPkt);
+        int lossPkt = totalPkt - pktCount;
+        I_LOG("bandwidth test report:");
+        I_LOG("[ ID] Interval   Transfer   Bandwidth     Jitter   Lost/Total Datagrams");
+        I_LOG("[{}] {}s       {}     {}     {}ms   {}/{} ({:.{}f}%) ",
+              testId,
+              (double)intervalMs / 1000,
+              formatTransfer(totalRecvByte),
+              formatBandwidth(totalRecvByte * 1000 / intervalMs),
+              (double)jitter / 1000,
+              lossPkt,
+              totalPkt,
+              (double)100 * lossPkt / totalPkt, 2);
+
+
+
+
+        BandwidthReport report(jitter, pktCount, totalRecvByte, testId, Message::genMid());
+        Message::replyMsg(report, conn);
+
+
+        break;
 
       } else {
         // ignore. nothing to od.
         W_LOG("Got a unexpected msg. msgId={} msgType={} testId={}", msgId, msgType, testId);
       }
-
     } else {
       throw std::runtime_error("msg receive error.");
     }
   }
+  I_LOG("bandwidthTest finished.");
 }
 
 Server::Server(int p) {
@@ -134,7 +194,7 @@ void Server::start() {
       switch ((MessageType)msgType) {
         case MessageType::testRequest: {
           TestRequest req(recvBuf);
-          T_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.msgType);
+          T_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.testType);
           TestConfirm response(1, req.msgId, Message::genMid());
           T_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
                 (int)response.msgType, response.result);

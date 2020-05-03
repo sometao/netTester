@@ -62,7 +62,7 @@ find_package(Threads REQUIRED)
 #-------------------------------------
 #  config.h.in settings
 #-------------------------------------
-set(SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE)
+set(SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG)
 set(LOG_FILE_NAME "appliaction.log")
 
 

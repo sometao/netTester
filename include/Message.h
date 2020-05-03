@@ -23,6 +23,7 @@ enum class MessageType {
   rttTestMsg = 3,
   bandwidthTestMsg = 4,
   bandwidthFinish = 5,
+  bandwidthReport = 6,
 };
 
 class Message {
@@ -223,7 +224,7 @@ class BandwidthTestMsg : public Message {
     seeker::ByteArray::writeData(data + 19, testNum);
   }
 
-  static void getTestNum(uint8_t* data, int& testNum ){
+  static void getTestNum(uint8_t* data, int& testNum) {
     seeker::ByteArray::readData(data + 19, testNum);
   }
 
@@ -249,5 +250,64 @@ class BandwidthTestMsg : public Message {
 };
 
 
-// TODO BAND_FINISH_MSG
-// TODO BAND_TEST_REPORT
+class BandwidthFinish : public Message {
+ public:
+  int totalTestNum;  //                   index: 15.
+
+  static const uint8_t msgType = (uint8_t)MessageType::bandwidthFinish;
+
+  static void getTotalPkt(uint8_t* data, int& totalPkt) {
+    seeker::ByteArray::readData(data + 15, totalPkt);
+  }
+
+  BandwidthFinish(int testId, int totalNum, int mid)
+      : Message(msgType, testId, mid), totalTestNum(totalNum) {}
+
+  size_t getLength() const override { return headLen() + 4; }
+
+  void getBinary(uint8_t* buf, size_t size) const override {
+    if (size < getLength()) {
+      throw std::runtime_error("buf too small.");
+    }
+    writeHead(buf, size);
+    seeker::ByteArray::writeData(buf + 15, totalTestNum);
+  }
+};
+
+
+class BandwidthReport : public Message {
+ public:
+  int jitterMicroSec;     //                   index: 15.
+  int receivedPkt;        //                   index: 19.
+  uint64_t transferByte;  //                   index: 23.
+
+  static const uint8_t msgType = (uint8_t)MessageType::bandwidthReport;
+
+  static void getTestNum(uint8_t* data, int& testNum) {
+    seeker::ByteArray::readData(data + 19, testNum);
+  }
+
+  BandwidthReport(uint8_t* data) : Message(data) {
+    seeker::ByteArray::readData(data + 15, jitterMicroSec);
+    seeker::ByteArray::readData(data + 19, receivedPkt);
+    seeker::ByteArray::readData(data + 23, transferByte);
+  }
+
+  BandwidthReport(int jitter, int recvPkt, uint64_t transBytes, int testId, int mid)
+      : Message(msgType, testId, mid),
+        jitterMicroSec(jitter),
+        receivedPkt(recvPkt),
+        transferByte(transBytes) {}
+
+  size_t getLength() const override { return headLen() + 16; }
+
+  void getBinary(uint8_t* buf, size_t size) const override {
+    if (size < getLength()) {
+      throw std::runtime_error("buf too small.");
+    }
+    writeHead(buf, size);
+    seeker::ByteArray::writeData(buf + 15, jitterMicroSec);
+    seeker::ByteArray::writeData(buf + 19, receivedPkt);
+    seeker::ByteArray::writeData(buf + 23, transferByte);
+  }
+};

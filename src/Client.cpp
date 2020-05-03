@@ -20,6 +20,8 @@
 #define CLIENT_BUF_SIZE 2048
 
 using seeker::SocketUtil;
+using std::cout;
+using std::endl;
 using std::string;
 
 
@@ -71,7 +73,6 @@ void Client::startRtt(int testTimes, int packetSize) {
   }
 
 
-
   while (testTimes > 0) {
     testTimes--;
     RttTestMsg msg(packetSize, testId, Message::genMid());
@@ -92,11 +93,11 @@ void Client::startRtt(int testTimes, int packetSize) {
       throw std::runtime_error("RttTestMsg receive error. recvLen=" + std::to_string(recvLen));
     }
   }
-
-
-
-  // TODO server process RTT msg
 }
+
+extern string formatTransfer(const uint64_t& dataSize);
+
+extern string formatBandwidth(const uint32_t& bytesPerSecond);
 
 void Client::startBandwidth(uint32_t bandwidth,
                             char bandwidthUnit,
@@ -130,17 +131,17 @@ void Client::startBandwidth(uint32_t bandwidth,
   assert(packetSize >= 24);
   assert(packetSize <= 1500);
   assert(bandwidthValue < (uint64_t)10 * 1024 * 1024 * 1024 + 1);
-
+  cout << "bandwidthValue in bit:" << bandwidthValue << endl;
+  bandwidthValue = bandwidthValue / 8;
+  cout << "bandwidthValue in byte:" << bandwidthValue << endl;
 
   uint8_t recvBuf[CLIENT_BUF_SIZE]{0};
   TestRequest req(TestType::bandwidth, testSeconds, Message::genMid());
-
   sendMsg(req);
   I_LOG("send TestRequest, msgId={} testType={}", req.msgId, req.testType);
 
 
-  // Waiting confirm.
-  auto testId = 0;
+  int testId = 0;
   auto recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
   if (recvLen > 0) {
     TestConfirm confirm(recvBuf);
@@ -154,26 +155,24 @@ void Client::startBandwidth(uint32_t bandwidth,
     throw std::runtime_error("TestConfirm receive error. recvLen=" + std::to_string(recvLen));
   }
 
-
-
   uint8_t sendBuf[CLIENT_BUF_SIZE]{0};
-
-  // TODO find how many group should one seconds have;
-  // TODO find packets per group
-  // TODO send a group packets and check whether sleep or not.
-
 
   BandwidthTestMsg msg(packetSize, testId, 0, Message::genMid());
   size_t len = msg.getLength();
   msg.getBinary(sendBuf, MSG_SEND_BUF_SIZE);
 
 
-  const int testTimeMs = testSeconds * 1000;
   const int groupTimeMs = 5;
   const uint64_t packetsPerSecond = bandwidthValue / packetSize;
   const int packestPerGroup = std::ceil((double)packetsPerSecond * groupTimeMs / 1000);
+  const double packetsIntervalMs = (double)1000 / packetsPerSecond;
 
-  const double packetsIntervalMs = 1000 / packetsPerSecond;
+  I_LOG("bandwidthValue={}, packetsPerSecond={}, packestPerGroup={}, packetsIntervalMs={}",
+        bandwidthValue,
+        packetsPerSecond,
+        packestPerGroup,
+        packetsIntervalMs);
+
 
   int passedTime = 0;
   int testNum = 0;
@@ -181,8 +180,8 @@ void Client::startBandwidth(uint32_t bandwidth,
   int64_t endTime = startTime + ((int64_t)testSeconds * 1000);
 
   while (seeker::Time::currentTime() < endTime) {
-
     for (int i = 0; i < packestPerGroup; i++) {
+      T_LOG("send a BandwidthTestMsg, testNum={}", testNum);
       BandwidthTestMsg::update(sendBuf, Message::genMid(), testNum, seeker::Time::microTime());
       conn.sendData((char*)sendBuf, len);
       testNum += 1;
@@ -190,19 +189,57 @@ void Client::startBandwidth(uint32_t bandwidth,
 
     passedTime = seeker::Time::currentTime() - startTime;
     int aheadTime = (testNum * packetsIntervalMs) - passedTime;
-    if(aheadTime > 5) {
+    if (aheadTime > 5) {
       std::this_thread::sleep_for(std::chrono::milliseconds(aheadTime - 2));
     }
+  }
+
+  BandwidthFinish finishMsg(testId, testNum, Message::genMid());
+  sendMsg(finishMsg);
+  T_LOG("waiting report.");
+  recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
+  if (recvLen > 0) {
+    BandwidthReport report(recvBuf);
+    I_LOG("bandwidth test report:");
+    I_LOG("[ ID] Interval   Transfer   Bandwidth     Jitter   Lost/Total Datagrams");
+
+    int interval = testSeconds;
+    int lossPkt = testNum - report.receivedPkt;
+    I_LOG("[{}] {}s       {}     {}       {}ms   {}/{} ({:.{}f}%)",
+          testId,
+          interval,
+          formatTransfer(report.transferByte),
+          formatBandwidth(report.transferByte / interval),
+          (double)report.jitterMicroSec / 1000,
+          lossPkt,
+          testNum,
+          (double)100 * lossPkt / testNum,
+          4);
+  } else {
+    throw std::runtime_error("TestConfirm receive error. recvLen=" + std::to_string(recvLen));
   }
 }
 
 
 
-void startClient(const string& serverHost, int serverPort, int timeInSeconds) {
+void startClientRtt(const string& serverHost, int serverPort, int testSeconds) {
+  I_LOG("Starting send data to {}:{}", serverHost, serverPort);
+  Client client(serverHost, serverPort);
+  client.startRtt(10, 64);
+  client.close();
+}
+
+void startClientBandwidth(const string& serverHost,
+                          int serverPort,
+                          int testSeconds,
+                          uint32_t bandwidth,
+                          char bandwidthUnit,
+                          int packetSize,
+                          int reportInterval) {
   I_LOG("Starting send data to {}:{}", serverHost, serverPort);
   Client client(serverHost, serverPort);
 
-  client.startRtt(10, 64);
+  client.startBandwidth(bandwidth, bandwidthUnit, packetSize, testSeconds, reportInterval);
 
   client.close();
 }
