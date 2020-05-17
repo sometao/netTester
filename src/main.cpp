@@ -46,10 +46,29 @@ int main(int argc, char* argv[]) {
       int time = result["t"].as<int>();
       int reportInterval = result["i"].as<int>();
       if (result.count("b")) {
-        int bandwidthInKbit = result["b"].as<int>();
-        int packetSize = 1400;
-        startClientBandwidth(
-            host, port, time, bandwidthInKbit, 'K', packetSize, reportInterval);
+        string bandwidth = result["b"].as<string>();
+        char bandwidthUnit = bandwidth.at(bandwidth.size() - 1);
+        auto bandwidthValue = std::stoi(bandwidth.substr(0, bandwidth.size() - 1));
+        switch (bandwidthUnit) {
+          case 'b':
+          case 'B':
+          case 'k':
+          case 'K':
+          case 'm':
+          case 'M':
+          case 'g':
+          case 'G': {
+            int packetSize = 1400;
+            startClientBandwidth(
+                host, port, time, bandwidthValue, bandwidthUnit, packetSize, reportInterval);
+            break;
+          }
+          default:
+            E_LOG("params error, bandwidth unit should only be B, K, M or G");
+            return -1;
+        }
+
+
       } else {
         startClientRtt(host, port, time);
       }

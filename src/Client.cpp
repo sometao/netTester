@@ -174,27 +174,47 @@ void Client::startBandwidth(uint32_t bandwidth,
         packetsIntervalMs);
 
 
-  int passedTime = 0;
-  int testNum = 0;
+  int64_t passedTime = 0;
+  int totalPkt = 0;
   int64_t startTime = seeker::Time::currentTime();
   int64_t endTime = startTime + ((int64_t)testSeconds * 1000);
 
+  int64_t lastReportTime = 0;
+
+  uint64_t totalData = 0;
   while (seeker::Time::currentTime() < endTime) {
     for (int i = 0; i < packestPerGroup; i++) {
-      T_LOG("send a BandwidthTestMsg, testNum={}", testNum);
-      BandwidthTestMsg::update(sendBuf, Message::genMid(), testNum, seeker::Time::microTime());
+      T_LOG("send a BandwidthTestMsg, totalPkt={}", totalPkt);
+      BandwidthTestMsg::update(sendBuf, Message::genMid(), totalPkt, seeker::Time::microTime());
       conn.sendData((char*)sendBuf, len);
-      testNum += 1;
+      totalData += len;
+      totalPkt += 1;
     }
 
     passedTime = seeker::Time::currentTime() - startTime;
-    int aheadTime = (testNum * packetsIntervalMs) - passedTime;
+
+    if(passedTime - lastReportTime > (int64_t)reportInterval * 1000) {
+
+
+      lastReportTime = passedTime;
+      I_LOG("[ ID] test time   Data transfer          Packets send");
+
+      I_LOG("[{}]       {}s           {}                   {}      ",
+        testId,
+        passedTime/1000,
+        formatTransfer(totalData),
+        totalPkt
+      );
+    }
+
+
+    int aheadTime = (totalPkt * packetsIntervalMs) - passedTime;
     if (aheadTime > 5) {
       std::this_thread::sleep_for(std::chrono::milliseconds(aheadTime - 2));
     }
   }
 
-  BandwidthFinish finishMsg(testId, testNum, Message::genMid());
+  BandwidthFinish finishMsg(testId, totalPkt, Message::genMid());
   sendMsg(finishMsg);
   T_LOG("waiting report.");
   recvLen = conn.recvData((char*)recvBuf, CLIENT_BUF_SIZE);
@@ -204,7 +224,7 @@ void Client::startBandwidth(uint32_t bandwidth,
     I_LOG("[ ID] Interval   Transfer   Bandwidth     Jitter   Lost/Total Datagrams");
 
     int interval = testSeconds;
-    int lossPkt = testNum - report.receivedPkt;
+    int lossPkt = totalPkt - report.receivedPkt;
     I_LOG("[{}] {}s       {}     {}       {}ms   {}/{} ({:.{}f}%)",
           testId,
           interval,
@@ -212,8 +232,8 @@ void Client::startBandwidth(uint32_t bandwidth,
           formatBandwidth(report.transferByte / interval),
           (double)report.jitterMicroSec / 1000,
           lossPkt,
-          testNum,
-          (double)100 * lossPkt / testNum,
+          totalPkt,
+          (double)100 * lossPkt / totalPkt,
           4);
   } else {
     throw std::runtime_error("TestConfirm receive error. recvLen=" + std::to_string(recvLen));
