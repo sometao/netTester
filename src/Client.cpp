@@ -199,7 +199,7 @@ void Client::startBandwidth(uint32_t bandwidth,
       lastReportTime = passedTime;
       I_LOG("[ ID] test time   Data transfer          Packets send");
 
-      I_LOG("[{}]       {}s           {}                   {}      ",
+      I_LOG("[{}]       {}s     {}            {}      ",
         testId,
         passedTime/1000,
         formatTransfer(totalData),
@@ -221,11 +221,11 @@ void Client::startBandwidth(uint32_t bandwidth,
   if (recvLen > 0) {
     BandwidthReport report(recvBuf);
     I_LOG("bandwidth test report:");
-    I_LOG("[ ID] Interval   Transfer   Bandwidth     Jitter   Lost/Total Datagrams");
+    I_LOG("[ ID] Interval    Transfer    Bandwidth     Jitter   Lost/Total Datagrams");
 
     int interval = testSeconds;
     int lossPkt = totalPkt - report.receivedPkt;
-    I_LOG("[{}] {}s       {}     {}       {}ms   {}/{} ({:.{}f}%)",
+    I_LOG("[{}] {}s     {}    {}     {}ms   {}/{} ({:.{}f}%)",
           testId,
           interval,
           formatTransfer(report.transferByte),

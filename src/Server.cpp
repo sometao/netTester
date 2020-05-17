@@ -71,8 +71,8 @@ void Server::bandwidthTest(int testSeconds) {
   uint64_t totalRecvByte = 0;
   int64_t maxDelay = INT_MIN;
   int64_t minDelay = INT_MAX;
-  std::set<int> mayMissedTestNum;
-  int expectTestNum = 0;
+  //std::set<int> mayMissedTestNum;
+  //int expectTestNum = 0;
   int64_t startTimeMs = -1;
   int64_t lastArrivalTimeMs = -1;
 
@@ -102,33 +102,38 @@ void Server::bandwidthTest(int testSeconds) {
         delay = seeker::Time::microTime() - ts;
         if (delay < minDelay) minDelay = delay;
         if (delay > maxDelay) maxDelay = delay;
-        if (testNum == expectTestNum) {
-          pktCount += 1;
-          expectTestNum += 1;
-        } else if (testNum < expectTestNum) {
-          auto search = mayMissedTestNum.find(testNum);
-          if (search != mayMissedTestNum.end()) {
-            mayMissedTestNum.erase(search);
-            pktCount += 1;
-          }
-        } else {
-          if (testNum - expectTestNum > 300) {
-            W_LOG("missed too much, testNum={}, expectTestNum={}, len=[{}], ", testNum,
-                  expectTestNum, (testNum - expectTestNum));
-          }
-          for (int i = expectTestNum; i < testNum; i++) {
-            mayMissedTestNum.insert(i);
-          }
-          if (mayMissedTestNum.size() > 2000) {
-            // only keep 1000, remove others.
-            W_LOG("mayMissedTestNum.size()[] > 2000, only keep 1000", mayMissedTestNum.size());
-            auto it = mayMissedTestNum.begin();
-            for (int i = 0; i < 1000; i++) ++it;
-            mayMissedTestNum.erase(it, mayMissedTestNum.end());
-          }
-          pktCount += 1;
-          expectTestNum = testNum + 1;
-        }
+
+        pktCount += 1;
+
+        //if (testNum == expectTestNum) {
+        //  pktCount += 1;
+        //  expectTestNum += 1;
+        //} else if (testNum < expectTestNum) {
+        //  auto search = mayMissedTestNum.find(testNum);
+        //  if (search != mayMissedTestNum.end()) {
+        //    mayMissedTestNum.erase(search);
+        //    pktCount += 1;
+        //  }
+        //} else {
+        //  if (testNum - expectTestNum > 300) {
+        //    W_LOG("missed too much, testNum={}, expectTestNum={}, len=[{}], ", testNum,
+        //          expectTestNum, (testNum - expectTestNum));
+        //  }
+        //  for (int i = expectTestNum; i < testNum; i++) {
+        //    mayMissedTestNum.insert(i);
+        //  }
+        //  if (mayMissedTestNum.size() > 2000) {
+        //    // only keep 1000, remove others.
+        //    W_LOG("mayMissedTestNum.size()[] > 2000, only keep 1000", mayMissedTestNum.size());
+        //    auto it = mayMissedTestNum.begin();
+        //    for (int i = 0; i < 1000; i++) ++it;
+        //    mayMissedTestNum.erase(it, mayMissedTestNum.end());
+        //  }
+        //  pktCount += 1;
+        //  expectTestNum = testNum + 1;
+        //}
+
+
       } else if (msgType == (uint8_t)MessageType::bandwidthFinish && testId == currentTest) {
         auto intervalMs = lastArrivalTimeMs - startTimeMs;
         auto jitter = maxDelay - minDelay;
@@ -136,8 +141,8 @@ void Server::bandwidthTest(int testSeconds) {
         BandwidthFinish::getTotalPkt(recvBuf, totalPkt);
         int lossPkt = totalPkt - pktCount;
         I_LOG("bandwidth test report:");
-        I_LOG("[ ID] Interval   Transfer   Bandwidth     Jitter   Lost/Total Datagrams");
-        I_LOG("[{}] {}s       {}     {}     {}ms   {}/{} ({:.{}f}%) ", testId,
+        I_LOG("[ ID] Interval    Transfer    Bandwidth      Jitter   Lost/Total Datagrams");
+        I_LOG("[{}]   {}s   {}     {}     {}ms   {}/{} ({:.{}f}%) ", testId,
               (double)intervalMs / 1000, formatTransfer(totalRecvByte),
               formatBandwidth(totalRecvByte * 1000 / intervalMs), (double)jitter / 1000,
               lossPkt, totalPkt, (double)100 * lossPkt / totalPkt, 2);
