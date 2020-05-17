@@ -3,8 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.11)
 
-project ("NetTester" VERSION 0.0.1)
-
+project ("netTester" VERSION 0.0.1)
 
 
 include(./cmake/checkBuildType.cmake)
@@ -62,8 +61,13 @@ find_package(Threads REQUIRED)
 #-------------------------------------
 #  config.h.in settings
 #-------------------------------------
+if(NOT SPDLOG_ACTIVE_LEVEL)
 set(SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG)
+endif()
+if(NOT LOG_FILE_NAME)
 set(LOG_FILE_NAME "appliaction.log")
+endif()
+
 
 
 configure_file(

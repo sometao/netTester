@@ -194,9 +194,9 @@ void Server::start() {
       switch ((MessageType)msgType) {
         case MessageType::testRequest: {
           TestRequest req(recvBuf);
-          T_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.testType);
+          I_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.testType);
           TestConfirm response(1, req.msgId, Message::genMid());
-          T_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
+          I_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
                 (int)response.msgType, response.result);
           Message::replyMsg(response, conn);
           if (req.testType == 2) {
@@ -209,7 +209,7 @@ void Server::start() {
         }
         case MessageType::rttTestMsg: {
           conn.reply((char*)recvBuf, recvLen);
-          // D_LOG("Reply rttTestMsg, msgId={}", msgId);
+          D_LOG("Reply rttTestMsg, msgId={}", msgId);
           break;
         }
         default:
