@@ -223,13 +223,13 @@ void Client::startBandwidth(uint32_t bandwidth,
     I_LOG("bandwidth test report:");
     I_LOG("[ ID] Interval    Transfer    Bandwidth     Jitter   Lost/Total Datagrams");
 
-    int interval = testSeconds;
+    double interval = (double)passedTime / 1000;
     int lossPkt = totalPkt - report.receivedPkt;
     I_LOG("[{}] {}s     {}    {}     {}ms   {}/{} ({:.{}f}%)",
           testId,
           interval,
-          formatTransfer(report.transferByte),
-          formatBandwidth(report.transferByte / interval),
+          formatTransfer(totalData),
+          formatBandwidth(totalData / interval),
           (double)report.jitterMicroSec / 1000,
           lossPkt,
           totalPkt,

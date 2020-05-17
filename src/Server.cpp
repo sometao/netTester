@@ -71,16 +71,20 @@ void Server::bandwidthTest(int testSeconds) {
   uint64_t totalRecvByte = 0;
   int64_t maxDelay = INT_MIN;
   int64_t minDelay = INT_MAX;
-  //std::set<int> mayMissedTestNum;
-  //int expectTestNum = 0;
+  // std::set<int> mayMissedTestNum;
+  // int expectTestNum = 0;
   int64_t startTimeMs = -1;
   int64_t lastArrivalTimeMs = -1;
+
+  int pktCount = 0;
+
 
   while (true) {
     T_LOG("bandwidthTest Waiting msg...");
     auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
 
-    if(startTimeMs > 0 && seeker::Time::currentTime() - startTimeMs > testSeconds * 1000 + 5000 ) {
+    if (startTimeMs > 0 &&
+        seeker::Time::currentTime() - startTimeMs > testSeconds * 1000 + 5000) {
       W_LOG("Test timeout. testId={}", currentTest);
       break;
     }
@@ -88,10 +92,9 @@ void Server::bandwidthTest(int testSeconds) {
     int64_t delay;
     if (recvLen > 0) {
       uint8_t msgType;
-      int msgId = 0;
-      uint16_t testId = 0;
-      int testNum = 0;
-      int pktCount = 0;
+      int msgId;
+      uint16_t testId;
+      int testNum;
       int64_t ts = 0;
       Message::getMsgType(recvBuf, msgType);
       Message::getMsgId(recvBuf, msgId);
@@ -111,7 +114,11 @@ void Server::bandwidthTest(int testSeconds) {
 
         pktCount += 1;
 
-        //if (testNum == expectTestNum) {
+        if (testNum % 100 == 0) {
+          T_LOG("BandwidthTestMsg testNum={} pktCount={}", testNum, pktCount);
+        }
+
+        // if (testNum == expectTestNum) {
         //  pktCount += 1;
         //  expectTestNum += 1;
         //} else if (testNum < expectTestNum) {
@@ -130,10 +137,9 @@ void Server::bandwidthTest(int testSeconds) {
         //  }
         //  if (mayMissedTestNum.size() > 2000) {
         //    // only keep 1000, remove others.
-        //    W_LOG("mayMissedTestNum.size()[] > 2000, only keep 1000", mayMissedTestNum.size());
-        //    auto it = mayMissedTestNum.begin();
-        //    for (int i = 0; i < 1000; i++) ++it;
-        //    mayMissedTestNum.erase(it, mayMissedTestNum.end());
+        //    W_LOG("mayMissedTestNum.size()[] > 2000, only keep 1000",
+        //    mayMissedTestNum.size()); auto it = mayMissedTestNum.begin(); for (int i = 0; i <
+        //    1000; i++) ++it; mayMissedTestNum.erase(it, mayMissedTestNum.end());
         //  }
         //  pktCount += 1;
         //  expectTestNum = testNum + 1;
