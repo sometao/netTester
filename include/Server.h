@@ -10,6 +10,7 @@
 #pragma once
 #include "config.h"
 #include "UdpConnection.h"
+#include <atomic>
 #include "seeker/loggerApi.h"
 #include "seeker/socketUtil.h"
 
@@ -20,6 +21,7 @@ class Server {
 
   int genTestId();
   uint16_t currentTest{0};
+  std::atomic<int> testIdGen{1};
 
   void bandwidthTest(int testSeconds);
 

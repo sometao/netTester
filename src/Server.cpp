@@ -195,7 +195,7 @@ void Server::start() {
         case MessageType::testRequest: {
           TestRequest req(recvBuf);
           I_LOG("Got TestRequest, msgId={}, testType={}", req.msgId, (int)req.testType);
-          TestConfirm response(1, req.msgId, Message::genMid());
+          TestConfirm response(1, testIdGen.fetch_add(1), req.msgId, Message::genMid());
           I_LOG("Reply Msg TestConfirm, msgId={}, testType={}, rst={}", response.msgId,
                 (int)response.msgType, response.result);
           Message::replyMsg(response, conn);

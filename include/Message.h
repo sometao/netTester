@@ -158,8 +158,8 @@ class TestConfirm : public Message {
     seeker::ByteArray::readData(data + 19, reMsgId);
   }
 
-  TestConfirm(int rst, int reId, int mid)
-      : Message(msgType, 0, mid), result(rst), reMsgId(reId) {}
+  TestConfirm(int rst, int tId, int reId, int mid)
+      : Message(msgType, tId, mid), result(rst), reMsgId(reId) {}
 
   size_t getLength() const override { return headLen() + 8; }
 
