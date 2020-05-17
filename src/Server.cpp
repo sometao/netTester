@@ -152,11 +152,11 @@ void Server::bandwidthTest(int testSeconds) {
         BandwidthFinish::getTotalPkt(recvBuf, totalPkt);
         int lossPkt = totalPkt - pktCount;
         I_LOG("bandwidth test report:");
-        I_LOG("[ ID] Interval    Transfer    Bandwidth      Jitter   Lost/Total Datagrams");
-        I_LOG("[{}]   {}s   {}     {}     {}ms   {}/{} ({:.{}f}%) ", testId,
-              (double)passedTimeInMs / 1000, formatTransfer(totalRecvByte),
+        I_LOG("[ ID] Interval    Transfer    Bandwidth      Jitter   totlaReceivePkt");
+        I_LOG("[{}]   {}s   {}     {}     {}ms   {}", testId, (double)passedTimeInMs / 1000,
+              formatTransfer(totalRecvByte),
               formatBandwidth(totalRecvByte * 1000 / passedTimeInMs), (double)jitter / 1000,
-              lossPkt, totalPkt, (double)100 * lossPkt / totalPkt, 2);
+              pktCount);
 
 
         BandwidthReport report(jitter, pktCount, totalRecvByte, testId, Message::genMid());
