@@ -78,7 +78,6 @@ void Server::bandwidthTest(int testSeconds) {
 
   while (true) {
     T_LOG("bandwidthTest Waiting msg...");
-    auto testId = 0;
     auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
     int64_t delay;
     if (recvLen > 0) {
@@ -138,28 +137,21 @@ void Server::bandwidthTest(int testSeconds) {
         int lossPkt = totalPkt - pktCount;
         I_LOG("bandwidth test report:");
         I_LOG("[ ID] Interval   Transfer   Bandwidth     Jitter   Lost/Total Datagrams");
-        I_LOG("[{}] {}s       {}     {}     {}ms   {}/{} ({:.{}f}%) ",
-              testId,
-              (double)intervalMs / 1000,
-              formatTransfer(totalRecvByte),
-              formatBandwidth(totalRecvByte * 1000 / intervalMs),
-              (double)jitter / 1000,
-              lossPkt,
-              totalPkt,
-              (double)100 * lossPkt / totalPkt, 2);
-
-
+        I_LOG("[{}] {}s       {}     {}     {}ms   {}/{} ({:.{}f}%) ", testId,
+              (double)intervalMs / 1000, formatTransfer(totalRecvByte),
+              formatBandwidth(totalRecvByte * 1000 / intervalMs), (double)jitter / 1000,
+              lossPkt, totalPkt, (double)100 * lossPkt / totalPkt, 2);
 
 
         BandwidthReport report(jitter, pktCount, totalRecvByte, testId, Message::genMid());
         Message::replyMsg(report, conn);
 
-
         break;
 
       } else {
         // ignore. nothing to od.
-        W_LOG("Got a unexpected msg. msgId={} msgType={} testId={}", msgId, msgType, testId);
+        W_LOG("Got a unexpected msg. msgId={} msgType={} testId={} currentTest={}", msgId,
+              msgType, testId, currentTest);
       }
     } else {
       throw std::runtime_error("msg receive error.");
@@ -184,7 +176,6 @@ void Server::start() {
 
   while (true) {
     // D_LOG("Waiting msg...");
-    auto testId = 0;
     auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
     if (recvLen > 0) {
       uint8_t msgType;
@@ -200,8 +191,9 @@ void Server::start() {
                 (int)response.msgType, response.result);
           Message::replyMsg(response, conn);
           if (req.testType == 2) {
-            currentTest = req.testId;
+            currentTest = response.testId;
             bandwidthTest(req.testTime);
+            currentTest = 0;
           } else {
             // nothing to do.
           }
