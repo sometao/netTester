@@ -75,7 +75,7 @@ void UdpConnection::close() {
 SOCKET UdpConnection::getSocket() { return sock; }
 
 
-void UdpConnection::updateRemoteAddr(const SOCKADDR_IN& addr) {
+void UdpConnection::updateRemoteAddr(const sockaddr_in& addr) {
   // TODO lock maybe need here.
   remoteIp = inet_ntoa(addr.sin_addr);
   remotePort = ntohs(addr.sin_port);
@@ -88,7 +88,7 @@ void UdpConnection::updateRemoteAddr() { updateRemoteAddr(lastAddr); }
 
 void UdpConnection::sendData(char* buf, size_t len) {
   if (inited && remoteAddr.sin_port != 0) {
-    static auto addrLen = sizeof(SOCKADDR);
+    static auto addrLen = sizeof(sockaddr);
     sendto(sock, buf, len, 0, (sockaddr*)&remoteAddr, addrLen);
   } else {
     throw std::runtime_error("connection not inited or remoteAddr not set.");
@@ -97,7 +97,7 @@ void UdpConnection::sendData(char* buf, size_t len) {
 
 void UdpConnection::reply(char* buf, size_t len) {
   if (inited && lastAddr.sin_port != 0) {
-    static auto addrLen = sizeof(SOCKADDR);
+    static auto addrLen = sizeof(sockaddr);
     sendto(sock, buf, len, 0, (sockaddr*)&lastAddr, addrLen);
   } else {
     throw std::runtime_error("connection not inited or lastAddr not set.");
