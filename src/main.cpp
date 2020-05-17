@@ -67,8 +67,6 @@ int main(int argc, char* argv[]) {
             E_LOG("params error, bandwidth unit should only be B, K, M or G");
             return -1;
         }
-
-
       } else {
         startClientRtt(host, port, time);
       }

@@ -104,7 +104,7 @@ class ByteArray {
  public:
   template <typename T>
   static void writeData(uint8_t* buf, T num) {
-    int len(sizeof(T));
+    size_t len(sizeof(T));
     for (size_t i = 0; i < len; ++i) {
       buf[i] = (uint8_t)(num >> (i * 8));
     }

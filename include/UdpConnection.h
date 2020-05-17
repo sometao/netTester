@@ -35,7 +35,7 @@ class UdpConnection {
   socklen_t lastAddrLen = sizeof(lastAddr);
 
   UdpConnection();
-  void updateRemoteAddr(const SOCKADDR_IN& addr);
+  void updateRemoteAddr(const sockaddr_in& addr);
   void updateRemoteAddr();
 
   UdpConnection& setLocalIp(const string& ip);
