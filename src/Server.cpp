@@ -79,6 +79,12 @@ void Server::bandwidthTest(int testSeconds) {
   while (true) {
     T_LOG("bandwidthTest Waiting msg...");
     auto recvLen = conn.recvData((char*)recvBuf, SERVER_BUF_SIZE);
+
+    if(startTimeMs > 0 && seeker::Time::currentTime() - startTimeMs > testSeconds * 1000 + 5000 ) {
+      W_LOG("Test timeout. testId={}", currentTest);
+      break;
+    }
+
     int64_t delay;
     if (recvLen > 0) {
       uint8_t msgType;
@@ -133,9 +139,8 @@ void Server::bandwidthTest(int testSeconds) {
         //  expectTestNum = testNum + 1;
         //}
 
-
       } else if (msgType == (uint8_t)MessageType::bandwidthFinish && testId == currentTest) {
-        auto intervalMs = lastArrivalTimeMs - startTimeMs;
+        auto passedTimeInMs = lastArrivalTimeMs - startTimeMs;
         auto jitter = maxDelay - minDelay;
         int totalPkt;
         BandwidthFinish::getTotalPkt(recvBuf, totalPkt);
@@ -143,8 +148,8 @@ void Server::bandwidthTest(int testSeconds) {
         I_LOG("bandwidth test report:");
         I_LOG("[ ID] Interval    Transfer    Bandwidth      Jitter   Lost/Total Datagrams");
         I_LOG("[{}]   {}s   {}     {}     {}ms   {}/{} ({:.{}f}%) ", testId,
-              (double)intervalMs / 1000, formatTransfer(totalRecvByte),
-              formatBandwidth(totalRecvByte * 1000 / intervalMs), (double)jitter / 1000,
+              (double)passedTimeInMs / 1000, formatTransfer(totalRecvByte),
+              formatBandwidth(totalRecvByte * 1000 / passedTimeInMs), (double)jitter / 1000,
               lossPkt, totalPkt, (double)100 * lossPkt / totalPkt, 2);
 
 
