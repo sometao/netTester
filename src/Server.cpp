@@ -150,7 +150,6 @@ void Server::bandwidthTest(int testSeconds) {
         auto jitter = maxDelay - minDelay;
         int totalPkt;
         BandwidthFinish::getTotalPkt(recvBuf, totalPkt);
-        int lossPkt = totalPkt - pktCount;
         I_LOG("bandwidth test report:");
         I_LOG("[ ID] Interval    Transfer    Bandwidth      Jitter   totlaReceivePkt");
         I_LOG("[{}]   {}s   {}     {}     {}ms   {}", testId, (double)passedTimeInMs / 1000,
